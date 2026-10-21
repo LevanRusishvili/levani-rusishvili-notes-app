@@ -4,7 +4,8 @@ const auth = require("./auth");
 const mail = require("./mail");
 
 const PORT = process.env.PORT || 4000;
-const ALLOWED_ORIGIN = "http://localhost:5173";
+// CHANGED: Reads from environment variable in production
+const ALLOWED_ORIGIN = process.env.CLIENT_URL || "http://localhost:5173";
 const SESSION_COOKIE = "sid";
 
 /* ---------- helpers ---------- */
@@ -71,20 +72,20 @@ function parseCookies(header = "") {
 const getSessionToken = (req) =>
   parseCookies(req.headers.cookie)[SESSION_COOKIE];
 
-// HttpOnly: JavaScript in the page can't read the cookie (protects against XSS theft).
-// SameSite=Lax: the browser doesn't send it on cross-site requests (protects against CSRF).
-// In production (HTTPS) also add "; Secure".
+// CHANGED: Added secure flag for production (HTTPS)
+const SECURE = process.env.NODE_ENV === "production" ? "; Secure" : "";
+
 function setSessionCookie(res, token, expiresAt) {
   res.setHeader(
     "Set-Cookie",
-    `${SESSION_COOKIE}=${token}; HttpOnly; Path=/; SameSite=Lax; Expires=${expiresAt.toUTCString()}`,
+    `${SESSION_COOKIE}=${token}; HttpOnly; Path=/; SameSite=Lax${SECURE}; Expires=${expiresAt.toUTCString()}`,
   );
 }
 
 function clearSessionCookie(res) {
   res.setHeader(
     "Set-Cookie",
-    `${SESSION_COOKIE}=; HttpOnly; Path=/; SameSite=Lax; Max-Age=0`,
+    `${SESSION_COOKIE}=; HttpOnly; Path=/; SameSite=Lax${SECURE}; Max-Age=0`,
   );
 }
 
@@ -126,9 +127,6 @@ function parseCredentials(body, { checkStrength }) {
   return { email, password };
 }
 
-// Validates and cleans the note fields a client may send.
-// requireAll = true  -> POST (title + content are required, defaults are filled in)
-// requireAll = false -> PUT  (only validates the fields that were sent)
 function parseNoteFields(body, { requireAll }) {
   assertObject(body);
   const errors = {};
@@ -237,8 +235,6 @@ async function handleAuth(req, res, action) {
         `${ALLOWED_ORIGIN}/reset-password?token=${token}`,
       );
     }
-    // Same answer whether the email exists or not, so nobody can use this
-    // form to find out which emails are registered.
     return sendEmpty(res, 204);
   }
 
@@ -285,7 +281,6 @@ async function handleAuth(req, res, action) {
     }
 
     db.setPasswordHash(user.id, await auth.hashPassword(next));
-    // log out every other device, keep this one
     db.deleteOtherSessions(user.id, getSessionToken(req));
     return sendEmpty(res, 204);
   }
@@ -298,7 +293,6 @@ async function handleAuth(req, res, action) {
 async function handleNotes(req, res, idPart) {
   const user = requireUser(req);
 
-  // /api/notes
   if (idPart === undefined) {
     if (req.method === "GET") {
       return sendJson(res, 200, db.getAllNotes(user.id));
@@ -310,7 +304,6 @@ async function handleNotes(req, res, idPart) {
     throw httpError(405, "Method not allowed");
   }
 
-  // /api/notes/:id  (a note that belongs to someone else is a 404 too)
   const id = Number(idPart);
   const note = Number.isInteger(id) ? db.getNote(user.id, id) : null;
   if (!note) throw httpError(404, "Note not found");
@@ -333,7 +326,7 @@ async function handleNotes(req, res, idPart) {
 
 const server = http.createServer(async (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", ALLOWED_ORIGIN);
-  res.setHeader("Access-Control-Allow-Credentials", "true"); // lets the browser send the cookie
+  res.setHeader("Access-Control-Allow-Credentials", "true");
   res.setHeader(
     "Access-Control-Allow-Methods",
     "GET, POST, PUT, DELETE, OPTIONS",
@@ -345,7 +338,11 @@ const server = http.createServer(async (req, res) => {
   }
 
   const { pathname } = new URL(req.url, `http://${req.headers.host}`);
-  const parts = pathname.split("/").filter(Boolean); // ['api', 'notes', '3']
+  const parts = pathname.split("/").filter(Boolean);
+
+  // CHANGED: Added health check for UptimeRobot
+  if (pathname === "/api/health") return sendJson(res, 200, { ok: true });
+
   console.log(req.method, pathname);
 
   try {
