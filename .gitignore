@@ -1,0 +1,24 @@
+# dependencies and build output
+node_modules/
+dist/
+.vite/
+
+# the database holds password hashes and login sessions: never commit it
+*.db
+*.db-*
+server/data/
+
+# secrets and local config
+.env
+.env.*
+!.env.example
+
+# logs and OS files
+*.log
+.DS_Store
+Thumbs.db
+
+# editor
+.vscode/*
+!.vscode/extensions.json
+.idea/

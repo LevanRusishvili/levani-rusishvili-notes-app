@@ -1,0 +1,202 @@
+@import "tailwindcss";
+
+/* =====================================================================
+   Design tokens
+   "Paper" (light): warm off-white pages, ink-dark text, one deep green accent.
+   "Ink" (dark):    warm near-black with a soft mint accent.
+   ===================================================================== */
+
+:root {
+  color-scheme: light;
+  --bg: #fbf9f4;
+  --surface: #f2ede3;
+  --fg: #231f1a;
+  --muted: #70685c;
+  --border: #e4dccd;
+  --accent: #1d6b57;
+  --accent-fg: #ffffff;
+  --danger: #b42318;
+  --font-body: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+
+  /* a faint wash of the accent, used for selected/active states */
+  --accent-soft: color-mix(in srgb, var(--accent) 11%, var(--bg));
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #171512;
+  --surface: #201d19;
+  --fg: #efe9dd;
+  --muted: #a69d8d;
+  --border: #342f28;
+  --accent: #6cc4a8;
+  --accent-fg: #10231d;
+  --danger: #f28b82;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="system"] {
+    color-scheme: dark;
+    --bg: #171512;
+    --surface: #201d19;
+    --fg: #efe9dd;
+    --muted: #a69d8d;
+    --border: #342f28;
+    --accent: #6cc4a8;
+    --accent-fg: #10231d;
+    --danger: #f28b82;
+  }
+}
+
+:root[data-font="serif"] {
+  --font-body: Georgia, Cambria, "Times New Roman", serif;
+}
+
+:root[data-font="mono"] {
+  --font-body: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+/* Expose the tokens as Tailwind colors: bg-bg, bg-surface, text-fg, text-muted, border-line, bg-accent-soft ... */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-line: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
+  --color-accent-soft: var(--accent-soft);
+  --color-danger: var(--danger);
+}
+
+/* =====================================================================
+   Base
+   ===================================================================== */
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--accent) 28%, transparent);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* =====================================================================
+   Motion (all of it is switched off for people who prefer reduced motion)
+   ===================================================================== */
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-rise {
+  animation: rise 0.24s ease-out both;
+}
+
+dialog[open] {
+  animation: pop 0.16s ease-out;
+}
+
+dialog[open]::backdrop {
+  animation: fade 0.16s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* =====================================================================
+   Reusable pieces
+   ===================================================================== */
+
+@layer components {
+  .btn {
+    @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100;
+  }
+  .btn-primary {
+    @apply bg-accent text-accent-fg shadow-sm hover:brightness-90;
+  }
+  .btn-secondary {
+    @apply border border-line bg-bg text-fg hover:bg-surface;
+  }
+  .btn-danger {
+    @apply bg-danger text-white hover:brightness-90;
+  }
+  .btn-ghost {
+    @apply text-muted hover:bg-surface hover:text-fg;
+  }
+  .btn-ghost-danger {
+    @apply text-muted hover:bg-danger/10 hover:text-danger;
+  }
+
+  /* bordered input (forms, tags, login) */
+  .field {
+    @apply w-full rounded-lg border border-line bg-bg px-3 py-2 text-fg transition-colors placeholder:text-muted hover:border-muted;
+  }
+  .field[aria-invalid="true"] {
+    border-color: var(--danger);
+  }
+
+  /* borderless input: used for writing (title and content), feels like paper */
+  .field-plain {
+    @apply w-full rounded-lg bg-transparent px-3 py-2 text-fg transition-colors placeholder:text-muted hover:bg-surface;
+  }
+  .field-plain[aria-invalid="true"] {
+    box-shadow: inset 0 -2px 0 var(--danger);
+  }
+
+  .chip {
+    @apply inline-block rounded-full border border-line bg-bg px-2.5 py-0.5 text-xs text-muted;
+  }
+}
