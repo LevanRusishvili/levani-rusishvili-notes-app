@@ -1,8 +1,7 @@
 import type { Note, NoteChanges, NoteInput } from "../types";
 import { request } from "./http";
 
-const BASE_URL = "http://localhost:4000/api/notes";
-
+const BASE_URL = "/api/notes";
 export const getNotes = () => request<Note[]>(BASE_URL);
 
 export const createNote = (input: NoteInput) =>

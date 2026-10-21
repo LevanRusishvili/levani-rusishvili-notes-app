@@ -1,8 +1,7 @@
 import type { User } from "../types";
 import { request } from "./http";
 
-const BASE_URL = "http://localhost:4000/api/auth";
-
+const BASE_URL = "/api/auth";
 export const getMe = () => request<User>(`${BASE_URL}/me`);
 
 export const register = (email: string, password: string) =>
